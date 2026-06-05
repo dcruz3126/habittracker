@@ -20,17 +20,25 @@ const state = {
 // GOOGLE SCRIPT BRIDGE
 // ============================================================
 // In production, replace mock with real calls:
-function run(fn, ...args) {
-  return new Promise((res, rej) => {
-    let call = google.script.run.withSuccessHandler(res).withFailureHandler(rej);
-    if (args.length > 0) {
-      call[fn](...args);
-    } else {
-      call[fn]();
-    }
-  });
-}
 
+const API_URL =
+  'https://script.google.com/macros/s/XXXXXXXX/exec';
+
+async function run(fn, ...args) {
+
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: fn,
+      args
+    })
+  });
+
+  return response.json();
+}
 // ============================================================
 // INIT
 // ============================================================
