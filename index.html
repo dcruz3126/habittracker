@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0f0f">
+<title>Habit Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── THEME VARIABLES ────────────────────────────────────── */
+:root {
+  /* Accent */
+  --c-accent:       #a8ff78;
+  --c-accent-dim:   rgba(168,255,120,0.12);
+  --c-accent-mid:   rgba(168,255,120,0.3);
+
+  /* Dark theme (default) */
+  --c-bg:           #0f0f0f;
+  --c-surface:      #1a1a1a;
+  --c-card:         #1f1f1f;
+  --c-card-raised:  #252525;
+  --c-border:       rgba(255,255,255,0.08);
+  --c-text:         #f0f0f0;
+  --c-text-2:       #a0a0a0;
+  --c-muted:        #555;
+  --c-done-bg:      rgba(168,255,120,0.06);
+  --c-done-border:  rgba(168,255,120,0.2);
+
+  /* Shared */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --nav-h:         64px;
+  --safe-bottom:   env(safe-area-inset-bottom, 0px);
+  --safe-top:      env(safe-area-inset-top, 0px);
+
+  --font-body:     'DM Sans', system-ui, sans-serif;
+  --font-display:  'DM Serif Display', Georgia, serif;
+
+  --anim:          220ms cubic-bezier(0.4, 0, 0.2, 1);
+  --spring:        400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── LIGHT THEME ────────────────────────────────────────── */
+[data-theme="light"] {
+  --c-bg:           #fafafa;
+  --c-surface:      #ffffff;
+  --c-card:         #ffffff;
+  --c-card-raised:  #f5f5f5;
+  --c-border:       #ebebeb;
+  --c-text:         #1a1a1a;
+  --c-text-2:       #666;
+  --c-muted:        #bbb;
+  --c-accent:       #2d9e00;
+  --c-accent-dim:   rgba(45,158,0,0.08);
+  --c-accent-mid:   rgba(45,158,0,0.2);
+  --c-done-bg:      rgba(45,158,0,0.04);
+  --c-done-border:  rgba(45,158,0,0.18);
+}
+
+/* ── BASE ───────────────────────────────────────────────── */
+html, body {
+  height: 100%;
+  font-family: var(--font-body);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  transition: background var(--anim), color var(--anim);
+  width: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ── APP SHELL ──────────────────────────────────────────── */
+
+* {
+  -webkit-text-size-adjust: 100%;
+}
+
+iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#app {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.view {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 48px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.view.active { display: flex; }
+
+/* ── TOPBAR ─────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(12px + var(--safe-top)) 20px 10px;
+  position: sticky;
+  top: 0;
+  background: var(--c-bg);
+  z-index: 10;
+}
+.topbar-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--c-text);
+}
+.topbar-title em { color: var(--c-accent); font-style: italic; }
+.topbar-action {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--c-text-2);
+  transition: background var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.topbar-action:active { background: var(--c-card-raised); }
+.topbar-action svg { width: 18px; height: 18px; stroke-width: 1.8; }
+
+/* ── BOTTOM NAV ─────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 20px; /* was 0, now raised */
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px); /* inset from edges so it floats */
+  max-width: 480px;
+  height: var(--nav-h);
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  border-radius: var(--radius-xl); /* rounded since it's floating */
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  padding-bottom: 0;
+  z-index: 20;
+}
+.nav-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer;
+  padding: 6px 4px;
+  color: var(--c-muted);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: color var(--anim);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.nav-item.active { color: var(--c-accent); }
+.nav-icon {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-icon svg { width: 22px; height: 22px; stroke-width: 1.8; fill: none; stroke: currentColor; }
+
+/* ── CARDS ──────────────────────────────────────────────── */
+.card {
+  background: var(--c-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border);
+  padding: 18px 20px;
+  margin: 0 16px 12px;
+}
+.section-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  padding: 4px 20px 8px;
+}
+
+/* ── LOADING SCREEN ─────────────────────────────────────── */
+#loading {
+  position: fixed; inset: 0;
+  background: var(--c-bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  z-index: 999;
+  transition: opacity 0.4s;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+.loader-logo {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--c-text);
+}
+.loader-logo em { color: var(--c-accent); font-style: italic; }
+.loader-bar {
+  width: 120px; height: 2px;
+  background: var(--c-border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.loader-fill {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: 99px;
+  width: 0;
+  animation: loadFill 1.2s ease forwards;
+}
+@keyframes loadFill { to { width: 100%; } }
+
+/* ── TODAY VIEW ─────────────────────────────────────────── */
+.today-hero {
+  margin: 8px 16px 16px;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  padding: 22px 22px 18px;
+  position: relative;
+  overflow: hidden;
+}
+.today-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: var(--c-accent-dim);
+  pointer-events: none;
+}
+.today-greeting {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--c-text-2);
+  margin-bottom: 4px;
+}
+.today-date {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--c-text);
+  margin-bottom: 16px;
+}
+.today-date em { color: var(--c-accent); font-style: italic; }
+
+/* Progress bar */
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.progress-track {
+  flex: 1;
+  height: 6px;
+  background: var(--c-border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 0%;
+}
+.progress-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-2);
+  white-space: nowrap;
+  min-width: 48px;
+  text-align: right;
+}
+
+/* All done banner */
+.all-done-banner {
+  display: none;
+  margin: 0 16px 12px;
+  background: var(--c-accent-dim);
+  border: 1px solid var(--c-accent-mid);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  text-align: center;
+  animation: fadeSlideIn var(--spring) both;
+}
+.all-done-banner.show { display: block; }
+.all-done-banner .banner-emoji { font-size: 24px; margin-bottom: 4px; }
+.all-done-banner .banner-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-accent);
+}
+.all-done-banner .banner-sub {
+  font-size: 12px;
+  color: var(--c-text-2);
+  margin-top: 2px;
+}
+
+/* ── HABIT CARDS ────────────────────────────────────────── */
+.habits-list {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.habit-card {
+  background: var(--c-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border);
+  margin: 0 16px 10px;
+  padding: 16px 16px 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color var(--anim), background var(--anim), opacity var(--anim);
+  animation: fadeSlideIn 300ms ease both;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.habit-card.done {
+  background: var(--c-done-bg);
+  border-color: var(--c-done-border);
+  opacity: 0.75;
+}
+.habit-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--c-accent);
+  opacity: 0;
+  transition: opacity var(--anim);
+}
+.habit-card.done::before { opacity: 1; }
+
+.habit-emoji {
+  font-size: 22px;
+  min-width: 32px;
+  text-align: center;
+  line-height: 1;
+}
+.habit-info {
+  flex: 1;
+  min-width: 0;
+}
+.habit-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--c-text);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--anim);
+}
+.habit-card.done .habit-name {
+  color: var(--c-text-2);
+  text-decoration: line-through;
+  text-decoration-color: var(--c-muted);
+}
+.habit-streak {
+  font-size: 12px;
+  color: var(--c-text-2);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.habit-streak-fire { font-size: 11px; }
+
+/* Quantity controls */
+.habit-qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.qty-btn {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--c-border);
+  background: var(--c-card-raised);
+  color: var(--c-text);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background var(--anim), border-color var(--anim);
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1;
+  user-select: none;
+}
+.qty-btn:active { background: var(--c-accent-dim); border-color: var(--c-accent-mid); }
+.qty-val {
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 36px;
+  text-align: center;
+  color: var(--c-text);
+}
+.qty-goal {
+  font-size: 11px;
+  color: var(--c-text-2);
+  margin-top: 1px;
+  text-align: center;
+}
+
+/* Boolean tap button */
+.habit-check {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--c-border);
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all var(--anim);
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.habit-check svg { width: 16px; height: 16px; stroke: var(--c-muted); stroke-width: 2.5; fill: none; opacity: 0; transition: opacity var(--anim); }
+.habit-card.done .habit-check {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+}
+.habit-card.done .habit-check svg { stroke: #0f0f0f; opacity: 1; }
+
+/* Done section divider */
+.done-section-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  padding: 12px 20px 6px;
+  display: none;
+}
+.done-section-label.show { display: block; }
+
+/* ── STATS VIEW ─────────────────────────────────────────── */
+.stats-summary {
+  margin: 8px 16px 12px;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.stats-summary::before {
+  content: '';
+  position: absolute;
+  bottom: -30px; right: -30px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: var(--c-accent-dim);
+  pointer-events: none;
+}
+.stat-block {}
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--c-accent);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--c-text-2);
+  font-weight: 500;
+}
+
+/* Per-habit stat card */
+.stat-habit-card {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  margin: 0 16px 10px;
+  padding: 16px 18px;
+  animation: fadeSlideIn 300ms ease both;
+}
+.stat-habit-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.stat-habit-emoji { font-size: 20px; }
+.stat-habit-name { font-size: 15px; font-weight: 500; }
+.stat-habit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.stat-mini {
+  flex: 1;
+  text-align: center;
+}
+.stat-mini-num {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--c-text);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+}
+.stat-mini-num span { font-size: 12px; color: var(--c-text-2); }
+.stat-mini-label { font-size: 11px; color: var(--c-text-2); margin-top: 1px; }
+
+/* Month bar */
+.month-bar-wrap {
+  margin-top: 12px;
+}
+.month-bar-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--c-text-2);
+  margin-bottom: 5px;
+}
+.month-bar-track {
+  height: 5px;
+  background: var(--c-border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.month-bar-fill {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── SETTINGS VIEW ──────────────────────────────────────── */
+.settings-section {
+  margin: 0 16px 16px;
+}
+.settings-section-title {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-2);
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+.settings-card {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--c-border);
+  gap: 14px;
+  cursor: pointer;
+  transition: background var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row:active { background: var(--c-card-raised); }
+.settings-row-icon {
+  width: 34px; height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--c-accent-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.settings-row-body { flex: 1; }
+.settings-row-label { font-size: 14px; font-weight: 500; }
+.settings-row-sub { font-size: 12px; color: var(--c-text-2); margin-top: 1px; }
+.settings-row-right { color: var(--c-muted); font-size: 13px; }
+.settings-row-right svg { width: 16px; height: 16px; stroke: var(--c-muted); stroke-width: 2; fill: none; }
+
+/* Toggle switch */
+.toggle {
+  width: 44px; height: 26px;
+  border-radius: 99px;
+  background: var(--c-border);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--anim);
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--c-accent); }
+.toggle-knob {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--anim);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.toggle.on .toggle-knob { transform: translateX(18px); }
+
+/* ── HABIT MANAGE MODAL ─────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-sheet {
+  background: var(--c-surface);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  width: 100%; max-width: 480px;
+  padding: 0 0 calc(20px + var(--safe-bottom));
+  animation: slideUp var(--anim) both;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.modal-handle {
+  width: 36px; height: 4px;
+  background: var(--c-border);
+  border-radius: 99px;
+  margin: 12px auto 16px;
+}
+.modal-header {
+  padding: 0 20px 16px;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title { font-size: 16px; font-weight: 500; }
+.modal-close {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--c-text-2);
+  font-size: 18px;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.modal-body { padding: 20px; }
+
+/* Form fields */
+.field-group { margin-bottom: 18px; }
+.field-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--c-text-2);
+  margin-bottom: 8px;
+  display: block;
+}
+.field-input {
+  width: 100%;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--c-text);
+  outline: none;
+  transition: border-color var(--anim);
+  -webkit-appearance: none;
+}
+.field-input:focus { border-color: var(--c-accent); }
+
+.type-toggle {
+  display: flex;
+  gap: 8px;
+}
+.type-pill {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-2);
+  cursor: pointer;
+  transition: all var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.type-pill.selected {
+  background: var(--c-accent-dim);
+  border-color: var(--c-accent-mid);
+  color: var(--c-accent);
+}
+
+.days-row {
+  display: flex;
+  gap: 6px;
+}
+.day-pill {
+  flex: 1;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--c-text-2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all var(--anim);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.day-pill.on {
+  background: var(--c-accent-dim);
+  border-color: var(--c-accent-mid);
+  color: var(--c-accent);
+}
+
+.qty-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.emoji-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.emoji-opt {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.emoji-opt.selected {
+  background: var(--c-accent-dim);
+  border-color: var(--c-accent-mid);
+}
+
+/* Btn */
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--radius-md);
+  background: var(--c-accent);
+  color: #0f0f0f;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: opacity var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-primary:active { opacity: 0.8; }
+.btn-danger {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: #ff4d6d;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid rgba(255,77,109,0.3);
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-danger:active { background: rgba(255,77,109,0.1); }
+
+/* Manage habits list in settings */
+.manage-habit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--c-border);
+  cursor: pointer;
+  transition: background var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.manage-habit-row:last-child { border-bottom: none; }
+.manage-habit-row:active { background: var(--c-card-raised); }
+.manage-habit-emoji { font-size: 20px; min-width: 28px; }
+.manage-habit-name { flex: 1; font-size: 14px; font-weight: 500; }
+.manage-habit-chevron { color: var(--c-muted); }
+.manage-habit-chevron svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+/* Add habit button row */
+.add-habit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  cursor: pointer;
+  color: var(--c-accent);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.add-habit-row:active { background: var(--c-card-raised); }
+.add-habit-icon {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--c-accent-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  color: var(--c-accent);
+}
+
+/* ── TOAST ──────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 48px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--c-text);
+  color: var(--c-bg);
+  padding: 10px 18px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── EMPTY STATE ────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--c-text-2);
+}
+.empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state-title { font-size: 16px; font-weight: 500; margin-bottom: 6px; color: var(--c-text); }
+.empty-state-sub { font-size: 13px; color: var(--c-text-2); line-height: 1.5; }
+
+/* ── ANIMATIONS ─────────────────────────────────────────── */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes checkPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.check-pop { animation: checkPop var(--spring) both; }
+
+/* ── ONBOARDING ─────────────────────────────────────────── */
+#onboarding {
+  position: fixed; inset: 0;
+  background: var(--c-bg);
+  z-index: 998;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.ob-screen {
+  display: none;
+  flex-direction: column;
+  gap: 20px;
+  padding: 48px 28px 40px;
+  width: 100%;
+  max-width: 480px;
+  animation: fadeSlideIn 350ms ease both;
+}
+.ob-screen.active { display: flex; }
+.ob-logo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--c-text-2);
+}
+.ob-logo em { color: var(--c-accent); font-style: italic; }
+.ob-heading {
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 1.15;
+  color: var(--c-text);
+}
+.ob-theme-row {
+  display: flex;
+  gap: 12px;
+}
+.ob-theme-card {
+  flex: 1;
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 14px 12px;
+  cursor: pointer;
+  transition: border-color var(--anim);
+  -webkit-tap-highlight-color: transparent;
+}
+.ob-theme-card.selected { border-color: var(--c-accent); }
+.ob-theme-preview {
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 80px;
+}
+.ob-preview-dark  { background: #1a1a1a; }
+.ob-preview-light { background: #f0f0f0; }
+.ob-preview-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(168,255,120,0.5);
+  width: 60%;
+}
+.ob-preview-dark  .ob-preview-card { background: #2a2a2a; }
+.ob-preview-light .ob-preview-card { background: #ffffff; }
+.ob-preview-card {
+  height: 18px;
+  border-radius: 4px;
+}
+.ob-preview-card.short { width: 70%; }
+.ob-theme-label {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--c-text-2);
+}
+.ob-theme-card.selected .ob-theme-label { color: var(--c-accent); }
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.date-nav-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--c-card-raised);
+  border: 1px solid var(--c-border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--c-text-2);
+  transition: all var(--anim);
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.date-nav-btn:active { background: var(--c-accent-dim); border-color: var(--c-accent-mid); }
+.date-nav-btn.disabled { opacity: 0.25; pointer-events: none; }
+.date-nav-btn svg { width: 16px; height: 16px; }
+.today-date { flex: 1; text-align: center; }
+
+.view-loader {
+  position: fixed;
+  inset: 0;
+  background: var(--c-bg);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.view-loader.show {
+  opacity: 1;
+  pointer-events: all;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 2.5px solid var(--c-border);
+  border-top-color: var(--c-accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  text-align: center;
+}
+</style>
+
+<!-- <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes"> -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Habits">
+<meta name="application-name" content="Habits">
+<meta name="theme-color" content="#0f0f0f">
+</head>
+<body>
+
+<!-- ── LOADING ─────────────────────────────────────────── -->
+<div id="loading">
+  <div class="loader-logo">habit<em>.</em></div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- ── APP ────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- TODAY VIEW -->
+  <div class="view active" id="view-today">
+    <div class="topbar">
+      <div class="topbar-title">habit<em>.</em></div>
+      <div class="topbar-action" onclick="openAddHabit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="today-hero">
+      <div class="today-greeting" id="today-greeting">Good morning</div>
+      <div class="date-nav">
+        <div class="date-nav-btn" id="date-prev" onclick="changeDay(-1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </div>
+        <div class="today-date" id="today-date">Loading...</div>
+        <div class="date-nav-btn" id="date-next" onclick="changeDay(1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+     
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-label" id="progress-label">0 / 0</div>
+      </div>
+    </div>
+
+    <!-- All done banner -->
+    <div class="all-done-banner" id="all-done-banner">
+      <div class="banner-emoji">🎉</div>
+      <div class="banner-text">All habits done!</div>
+      <div class="banner-sub">You crushed today. See you tomorrow.</div>
+    </div>
+
+    <!-- Active habits -->
+    <div id="active-habits-wrap">
+      <div class="section-label" id="active-label" style="display:none">Today</div>
+      <div class="habits-list" id="active-habits"></div>
+    </div>
+
+    <!-- Done habits -->
+    <div id="done-habits-wrap">
+      <div class="done-section-label" id="done-label">Done</div>
+      <div class="habits-list" id="done-habits"></div>
+    </div>
+
+  </div><!-- /today -->
+
+  <!-- STATS VIEW -->
+  <div class="view" id="view-stats">
+    <div class="topbar">
+      <div class="topbar-title">stats<em>.</em></div>
+    </div>
+    <div id="stats-content">
+      <div class="empty-state">
+        <div class="empty-state-icon">📊</div>
+        <div class="empty-state-title">Loading stats…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS VIEW -->
+  <div class="view" id="view-settings">
+    <div class="topbar">
+      <div class="topbar-title">settings<em>.</em></div>
+    </div>
+
+    <!-- Habits section -->
+    <div class="settings-section" style="margin-top:8px">
+      <div class="settings-section-title">My Habits</div>
+      <div class="settings-card" id="manage-habits-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Preferences -->
+    <div class="settings-section">
+      <div class="settings-section-title">Preferences</div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="toggleTheme()">
+          <div class="settings-row-icon">🌙</div>
+          <div class="settings-row-body">
+            <div class="settings-row-label">Dark Mode</div>
+            <div class="settings-row-sub">Switch between dark and light</div>
+          </div>
+          <div class="toggle" id="theme-toggle">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-card">
+        <div class="settings-row" onclick="showInstallPrompt()">
+          <div class="settings-row-icon">📱</div>
+          <div class="settings-row-body">
+            <div class="settings-row-label">Add to Home Screen</div>
+            <div class="settings-row-sub">Install as an app on your phone</div>
+          </div>
+          <div class="settings-row-right">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="settings-section">
+      <div class="settings-section-title">About</div>
+      <div class="settings-card">
+        <div class="settings-row" style="cursor:default">
+          <div class="settings-row-icon">✨</div>
+          <div class="settings-row-body">
+            <div class="settings-row-label">Habit Tracker</div>
+            <div class="settings-row-sub">v1.0 — No subscription, ever.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+  </div><!-- /settings -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="nav-today" onclick="goTo('today')">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      Today
+    </div>
+    <div class="nav-item" id="nav-stats" onclick="goTo('stats')">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      Stats
+    </div>
+    <div class="nav-item" id="nav-settings" onclick="goTo('settings')">
+      <div class="nav-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      Settings
+    </div>
+  </nav>
+<div class="view-loader" id="view-loader">
+  <div class="spinner"></div>
+</div>
+</div><!-- /app -->
+<!-- ONBOARDING OVERLAY -->
+<div id="onboarding" style="display:none">
+  <div id="ob-screen-1" class="ob-screen active">
+    <div class="ob-logo">habit<em>.</em></div>
+    <div class="ob-heading">What should we<br>call you?</div>
+    <input class="field-input" type="text" id="ob-name" placeholder="Your name" maxlength="20" style="margin-bottom:0">
+    <button class="btn-primary" onclick="obNext(1)">Continue →</button>
+  </div>
+
+  <div id="ob-screen-2" class="ob-screen">
+    <div class="ob-logo">habit<em>.</em></div>
+    <div class="ob-heading">Pick your<br>theme.</div>
+    <div class="ob-theme-row">
+      <div class="ob-theme-card selected" id="ob-dark" onclick="obSelectTheme('dark')">
+        <div class="ob-theme-preview ob-preview-dark">
+          <div class="ob-preview-bar"></div>
+          <div class="ob-preview-card"></div>
+          <div class="ob-preview-card short"></div>
+        </div>
+        <div class="ob-theme-label">Dark</div>
+      </div>
+      <div class="ob-theme-card" id="ob-light" onclick="obSelectTheme('light')">
+        <div class="ob-theme-preview ob-preview-light">
+          <div class="ob-preview-bar"></div>
+          <div class="ob-preview-card"></div>
+          <div class="ob-preview-card short"></div>
+        </div>
+        <div class="ob-theme-label">Light</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="obNext(2)">Continue →</button>
+  </div>
+
+  <div id="ob-screen-3" class="ob-screen">
+    <div class="ob-logo">habit<em>.</em></div>
+    <div class="ob-heading">Create your<br>first habit.</div>
+
+    <div class="field-group">
+      <label class="field-label">Icon</label>
+      <div class="emoji-row" id="ob-emoji-row"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Name</label>
+      <input class="field-input" type="text" id="ob-habit-name" placeholder="e.g. Drink Water" maxlength="30">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Type</label>
+      <div class="type-toggle">
+        <div class="type-pill selected" id="ob-type-boolean" onclick="obSelectType('boolean')">✓ Yes / No</div>
+        <div class="type-pill" id="ob-type-quantity" onclick="obSelectType('quantity')">🔢 Quantity</div>
+      </div>
+    </div>
+    <div class="field-group" id="ob-qty-fields" style="display:none">
+      <label class="field-label">Goal</label>
+      <div class="qty-fields">
+        <input class="field-input" type="number" id="ob-goal" placeholder="8" min="1">
+        <input class="field-input" type="text"   id="ob-unit" placeholder="glasses">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="obFinish()">Start Tracking →</button>
+  </div>
+</div>
+
+<!-- ADD / EDIT HABIT MODAL -->
+<div class="modal-overlay" id="habit-modal-overlay" onclick="closeHabitModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">New Habit</div>
+      <div class="modal-close" onclick="closeHabitModal()">×</div>
+    </div>
+    <div class="modal-body">
+
+      <!-- Emoji picker -->
+      <div class="field-group">
+        <label class="field-label">Icon</label>
+        <div class="emoji-row" id="emoji-row"></div>
+      </div>
+
+      <!-- Name -->
+      <div class="field-group">
+        <label class="field-label">Name</label>
+        <input class="field-input" type="text" id="habit-name-input" placeholder="e.g. Drink Water" maxlength="30">
+      </div>
+
+      <!-- Type -->
+      <div class="field-group">
+        <label class="field-label">Type</label>
+        <div class="type-toggle">
+          <div class="type-pill selected" id="type-boolean" onclick="selectType('boolean')">✓ Yes / No</div>
+          <div class="type-pill" id="type-quantity" onclick="selectType('quantity')">🔢 Quantity</div>
+        </div>
+      </div>
+
+      <!-- Quantity fields (hidden by default) -->
+      <div class="field-group" id="qty-fields" style="display:none">
+        <label class="field-label">Goal</label>
+        <div class="qty-fields">
+          <input class="field-input" type="number" id="habit-goal-input" placeholder="8" min="1">
+          <input class="field-input" type="text" id="habit-unit-input" placeholder="glasses">
+        </div>
+      </div>
+
+      <!-- Days -->
+      <div class="field-group">
+        <label class="field-label">Active Days</label>
+        <div class="days-row" id="days-row">
+          <div class="day-pill on" data-day="0">M</div>
+          <div class="day-pill on" data-day="1">T</div>
+          <div class="day-pill on" data-day="2">W</div>
+          <div class="day-pill on" data-day="3">T</div>
+          <div class="day-pill on" data-day="4">F</div>
+          <div class="day-pill on" data-day="5">S</div>
+          <div class="day-pill on" data-day="6">S</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="saveHabit()">Save Habit</button>
+      <button class="btn-danger" id="delete-habit-btn" style="display:none" onclick="confirmDeleteHabit()">Delete Habit</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+
+// ============================================================
+// BOOT
+// ============================================================
+init();
+</script>
+</body>
+</html>
