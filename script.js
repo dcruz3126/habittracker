@@ -33,12 +33,14 @@ async function run(fn, ...args) {
     },
     body: JSON.stringify({
       action: fn,
+      ssid: window.SSID,
       args
     })
   });
 
   return response.json();
 }
+
 // ============================================================
 // INIT
 // ============================================================
@@ -46,7 +48,13 @@ async function run(fn, ...args) {
 
 async function init() {
   try {
+    
+    const params = new URLSearchParams(window.location.search);
+    const ssid = params.get('ssid');
+    window.SSID = ssid;
+    
     state.settings = await run('getSettings') || {};
+    
       // First time user — show onboarding instead of app
     // const hasSetup = state.settings && state.settings.setup_complete === 'TRUE' || state.settings.setup_complete === true;
     const hasSetup = !window.DEMO_MODE && state.settings && 
