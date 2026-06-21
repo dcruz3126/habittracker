@@ -2,7 +2,6 @@
 // STATE
 // ============================================================
 
-console.log("SCRIPT STARTED");
 const EMOJIS = ['💧','🏃','📚','😴','🧘','🥗','💊','🎯','✍️','🎸','🐕','🌿','🏋️','🧠','❤️','☀️','🛁','📵','💤','🍎'];
 
 const state = {
@@ -50,7 +49,7 @@ async function run(fn, ...args) {
 
 async function init() {
   try {
-    
+    console.log("INIT STARTED");
     const params = new URLSearchParams(window.location.search);
     const ssid = params.get('ssid');
     window.SSID = ssid;
