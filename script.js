@@ -802,11 +802,12 @@ function debouncedLogHabit(habitId, value, date, delay = 2000) {
     delete qtyDebounceTimers[habitId];
   }, delay);
 }
+const params = new URLSearchParams({ test: "1" });
+
 fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    mode: "no-cors", 
-    body: "test=1"
-  });
+  method: "POST",
+  body: params  
+})
+  .then(res => res.text())
+  .then(data => console.log(data))
+  .catch(err => console.error(err));
