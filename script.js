@@ -23,7 +23,7 @@ const state = {
 // In production, replace mock with real calls:
 
 const API_URL =
-  'https://script.google.com/macros/s/AKfycbxfIfIfKRDpfLGRLQ_vazZOjVwYOOptXhF9N0UI-Jz0Nci9nBxfc4Y26anOz-fZYBgAYQ/exec';
+  'https://script.google.com/macros/s/AKfycbyoPAjgky3drBh0y363GsA__yhIlhRYG069Emzb7tmBS-npw20uOirrACknbPjgeqFk/exec';
 
 // async function run(fn, ...args) {
 //   console.log("RUN CALLED", fn, args);
