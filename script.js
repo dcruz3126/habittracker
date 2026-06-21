@@ -59,6 +59,7 @@ async function run(fn, ...args) {
     body
   });
 
+
   const text = await response.text();
   console.log("RAW RESPONSE", text);
 
@@ -801,5 +802,11 @@ function debouncedLogHabit(habitId, value, date, delay = 2000) {
     delete qtyDebounceTimers[habitId];
   }, delay);
 }
-
-fetch(API_URL, { method: "POST", body: "test=1" })
+fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    mode: "no-cors", 
+    body: "test=1"
+  });
