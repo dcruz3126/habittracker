@@ -25,21 +25,40 @@ const state = {
 const API_URL =
   'https://script.google.com/macros/s/AKfycbxZtpmdA0oNewRSxIUsqk81oj6p04T0c6aXgd7zH2Z7uyKN26FMmgh_85-uFQdmdq5y/exec';
 
+// async function run(fn, ...args) {
+//   console.log("RUN CALLED", fn, args);
+//   const response = await fetch(API_URL, {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json'
+//     },
+//     body: JSON.stringify({
+//       action: fn,
+//       ssid: window.SSID,
+//       args
+//     })
+//   });
+
+//   return response.json();
+// }
+
 async function run(fn, ...args) {
   console.log("RUN CALLED", fn, args);
+
+  const body = new URLSearchParams();
+  body.append("action", fn);
+  body.append("ssid", window.SSID);
+  body.append("args", JSON.stringify(args));
+
   const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      action: fn,
-      ssid: window.SSID,
-      args
-    })
+    method: "POST",
+    body
   });
 
-  return response.json();
+  const text = await response.text();
+  console.log("RAW RESPONSE", text);
+
+  return JSON.parse(text);
 }
 
 // ============================================================
