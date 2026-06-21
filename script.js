@@ -74,6 +74,7 @@ async function init() {
     window.SSID = ssid;
     
     state.settings = await run('getSettings') || {};
+    console.log('settings',state.settings)
     
       // First time user — show onboarding instead of app
     // const hasSetup = state.settings && state.settings.setup_complete === 'TRUE' || state.settings.setup_complete === true;
