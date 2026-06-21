@@ -44,26 +44,21 @@ const API_URL =
 
 async function run(fn, ...args) {
   console.log("RUN CALLED", fn, args);
-
   const body = new URLSearchParams();
   body.append("action", fn);
   body.append("ssid", window.SSID);
   body.append("args", JSON.stringify(args));
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    mode: "no-cors", 
-    body
-  });
-
-
+  const response = await fetch(API_URL, { method: "POST", body });
   const text = await response.text();
   console.log("RAW RESPONSE", text);
 
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Failed to parse response:", text);
+    throw new Error(`Invalid JSON from server: ${text}`);
+  }
 }
 
 // ============================================================
@@ -802,12 +797,5 @@ function debouncedLogHabit(habitId, value, date, delay = 2000) {
     delete qtyDebounceTimers[habitId];
   }, delay);
 }
-const params = new URLSearchParams({ test: "1" });
 
-fetch(API_URL, {
-  method: "POST",
-  body: params  
-})
-  .then(res => res.text())
-  .then(data => console.log(data))
-  .catch(err => console.error(err));
+init();
