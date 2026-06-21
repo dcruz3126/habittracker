@@ -798,4 +798,4 @@ function debouncedLogHabit(habitId, value, date, delay = 2000) {
   }, delay);
 }
 
-init();
+fetch(API_URL, { method: "POST", body: "test=1" })
