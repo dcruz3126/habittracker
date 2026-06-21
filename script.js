@@ -52,6 +52,7 @@ async function run(fn, ...args) {
 
   const response = await fetch(API_URL, {
     method: "POST",
+    mode: "no-cors", 
     body
   });
 
