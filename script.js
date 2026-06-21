@@ -778,3 +778,5 @@ function debouncedLogHabit(habitId, value, date, delay = 2000) {
     delete qtyDebounceTimers[habitId];
   }, delay);
 }
+
+init();
